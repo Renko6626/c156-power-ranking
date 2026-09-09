@@ -172,6 +172,38 @@ a:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--dim);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.switch:hover {
+  color: var(--txt);
+}
+
+.switch.on {
+  color: var(--txt);
+  border-color: var(--accent);
+  background: #231a18;
+}
+
+.switch input {
+  accent-color: var(--accent);
+  margin: 0;
+  cursor: pointer;
+}
+
 /* ---------- table ---------- */
 .table-wrap {
   overflow-x: auto;

@@ -18,6 +18,7 @@ const loading = ref(true)
 const board = ref(BOARDS[0])
 const query = ref('')
 const category = ref('')
+const humanOnly = ref(false)
 
 onMounted(async () => {
   try {
@@ -55,12 +56,17 @@ function matchQuery(row) {
   return JSON.stringify(row).toLowerCase().includes(q)
 }
 
+// 过滤掉「非人物角色」：非人格角色（洪水、瘟疫、AI、器物）与抽象意象（时间、记忆）
+function matchKind(c) {
+  return !humanOnly.value || c.kind === '人格角色'
+}
+
 /* ---------- 总战力榜 ---------- */
 const powerRows = computed(() => {
   const list = data.value?.characters || []
   return list
     .map((c, i) => ({ ...c, __rank: i + 1 }))
-    .filter(matchQuery)
+    .filter((c) => matchKind(c) && matchQuery(c))
 })
 
 const powerColumns = [
@@ -111,7 +117,7 @@ const killRows = computed(() => {
   return list
     .filter((c) => killTotal(c) > 0 || (c.aoe_level && c.aoe_level !== '无'))
     .map((c, i) => ({ ...c, __rank: i + 1 }))
-    .filter(matchQuery)
+    .filter((c) => matchKind(c) && matchQuery(c))
 })
 
 const killColumns = [
@@ -190,7 +196,7 @@ const categoryRows = computed(() => {
     .filter(Boolean)
     .sort((a, b) => Number(b.power_score || 0) - Number(a.power_score || 0))
     .map((c, i) => ({ ...c, __rank: i + 1 }))
-    .filter(matchQuery)
+    .filter((c) => matchKind(c) && matchQuery(c))
 })
 
 const categoryColumns = [
@@ -284,7 +290,15 @@ const currentRows = computed(() => {
         <select v-if="board === '分组榜'" v-model="category">
           <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
         </select>
-        <span class="count">{{ currentCount }} 条记录</span>
+        <label v-if="board !== '死亡人数榜'" class="switch" :class="{ on: humanOnly }">
+          <input v-model="humanOnly" type="checkbox" />
+          <span>只看人物角色</span>
+        </label>
+        <span class="count">
+          {{ currentCount }} 条记录<template v-if="humanOnly && board !== '死亡人数榜'">
+            （已过滤非人物角色）</template
+          >
+        </span>
       </div>
 
       <AwardsPanel
