@@ -18,7 +18,7 @@ const loading = ref(true)
 const board = ref(BOARDS[0])
 const query = ref('')
 const category = ref('')
-const humanOnly = ref(false)
+const humanOnly = ref(true)
 
 onMounted(async () => {
   try {

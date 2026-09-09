@@ -49,38 +49,47 @@ const checks = [
   ['无 JS 运行时错误', errors.length === 0]
 ]
 
-// 验证「只看人物角色」开关：勾选后非人物角色（非人格角色 / 抽象意象）应被过滤
-const beforeFilter = rows.length
-const toggle = doc.querySelector('.switch input[type=checkbox]')
-let afterFilter = -1
-let filterLabel = ''
-if (toggle) {
-  filterLabel = doc.querySelector('.switch span')?.textContent.trim() || ''
-  toggle.checked = true
-  toggle.dispatchEvent(new window.Event('change', { bubbles: true }))
-  for (let i = 0; i < 20; i++) {
-    await sleep(250)
-    afterFilter = doc.querySelectorAll('tbody tr').length
-    if (afterFilter !== beforeFilter) break
-  }
-}
-checks.push(['存在「只看人物角色」开关', !!toggle])
-checks.push([`勾选后行数下降（${beforeFilter} → ${afterFilter}）`, afterFilter > 0 && afterFilter < beforeFilter])
-
-// 用数据本身算出「人物角色」应有的条数，作为过滤结果的期望值
+// 用数据本身算出期望值：人物角色数 / 全部角色数
 let expectedHuman = -1
+let expectedAll = -1
 try {
   const payload = await (await fetch(new URL('./data/ranking.json', url))).json()
+  expectedAll = payload.characters.length
   expectedHuman = payload.characters.filter((c) => c.kind === '人格角色').length
 } catch (e) {
   errors.push(`无法读取 ranking.json: ${e.message}`)
 }
+
+// 「只看人物角色」默认开启：初始应只显示人物角色，取消勾选后恢复全部
+const toggle = doc.querySelector('.switch input[type=checkbox]')
+const defaultChecked = toggle ? toggle.checked : false
+const initialRows = rows.length
+let afterUncheck = -1
+if (toggle) {
+  toggle.checked = false
+  toggle.dispatchEvent(new window.Event('change', { bubbles: true }))
+  for (let i = 0; i < 20; i++) {
+    await sleep(250)
+    afterUncheck = doc.querySelectorAll('tbody tr').length
+    if (afterUncheck !== initialRows) break
+  }
+}
+
+checks.push(['存在「只看人物角色」开关', !!toggle])
 checks.push([
-  `过滤后行数等于人物角色数（${afterFilter} = ${expectedHuman}）`,
-  expectedHuman > 0 && afterFilter === expectedHuman
+  `默认开启过滤，初始只显示人物角色（${initialRows} = ${expectedHuman}）`,
+  defaultChecked && expectedHuman > 0 && initialRows === expectedHuman
+])
+checks.push([
+  `取消过滤后显示全部角色（${initialRows} → ${afterUncheck}）`,
+  expectedAll > 0 && afterUncheck === expectedAll
 ])
 
-console.log('过滤开关:', filterLabel || '(未找到)', `| 行数 ${beforeFilter} → ${afterFilter}（人物角色 ${expectedHuman}）`)
+console.log(
+  '过滤开关:',
+  doc.querySelector('.switch span')?.textContent.trim() || '(未找到)',
+  `| 默认 ${initialRows}（人物）→ 取消后 ${afterUncheck}（全部 ${expectedAll}）`
+)
 
 console.log('URL:', url)
 console.log('标签页:', tabs.join(' | '))
