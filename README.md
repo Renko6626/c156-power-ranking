@@ -43,6 +43,32 @@ npm run build    # 产物输出到 dist/
 npm run preview  # 预览构建产物
 ```
 
+### 冒烟测试（无浏览器环境）
+
+CI/服务器上没有浏览器时，可以用 jsdom 真实执行页面并断言渲染结果：
+
+```bash
+npm install --no-save jsdom
+npx vite build --config vite.config.smoke.js
+sed -i 's|<script type="module" crossorigin src=|<script src=|' dist-smoke/index.html
+npx http-server dist-smoke -p 8933 &   # 或 python3 -m http.server 8933
+node scripts/smoke_test.mjs http://127.0.0.1:8933/
+```
+
+断言内容：Vue 挂载、表格行数、标签页数量、统计卡片、首行角色、免责声明、零 JS 错误。
+（jsdom 不支持 `<script type="module">`，所以测试用的是 IIFE 产物。）
+
+## 部署
+
+当前走 `gh-pages` 分支（`gh` 的 OAuth token 没有 `workflow` scope，无法推送 Actions 工作流）：
+
+```bash
+bash scripts/deploy_gh_pages.sh
+```
+
+若之后执行过 `gh auth refresh -s workflow`，可把 `docs/deploy-workflow.yml.example`
+移回 `.github/workflows/deploy.yml`，改用 Actions 自动构建。
+
 ## 数据说明
 
 页面数据只包含**派生统计**：
