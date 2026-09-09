@@ -25,6 +25,8 @@ OUT = SITE / "public" / "data" / "ranking.json"
 CHAR_KEEP = (
     "uid", "name", "aliases", "role", "kind", "power_tier", "power_score",
     "ending", "kills_direct", "kills_indirect", "aoe_level",
+    "kill_estimate", "kill_estimate_label", "kill_estimate_range",
+    "kill_estimate_basis", "kill_estimate_confidence",
     "self_kill", "consented", "conceptual_death", "uncertain",
     "note", "work_id", "work_rank", "work_title", "categories",
 )

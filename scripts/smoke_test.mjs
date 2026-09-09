@@ -84,6 +84,30 @@ checks.push([
   `取消过滤后显示全部角色（${initialRows} → ${afterUncheck}）`,
   expectedAll > 0 && afterUncheck === expectedAll
 ])
+checks.push(['表头含「估计击杀」', headers.some((h) => h.includes('估计击杀'))])
+checks.push([
+  '表头不再出现 L1/L2 口径',
+  !headers.some((h) => /L1|L2|亲手|间接/.test(h))
+])
+
+// 切到「击杀榜」，验证按估计击杀排序
+const killTab = [...doc.querySelectorAll('.tab')].find((t) => t.textContent.includes('击杀榜'))
+let killTopRow = []
+if (killTab) {
+  killTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+  for (let i = 0; i < 20; i++) {
+    await sleep(250)
+    const first = doc.querySelector('tbody tr')
+    if (first && first.textContent.includes('估计')) break
+    if (first) killTopRow = [...first.querySelectorAll('td')].map((el) => el.textContent.trim())
+    if (killTopRow.length) break
+  }
+  const first = doc.querySelector('tbody tr')
+  killTopRow = first ? [...first.querySelectorAll('td')].map((el) => el.textContent.trim()) : []
+}
+checks.push(['击杀榜榜首是估计值最高者', killTopRow.some((c) => c.includes('远古的大灵'))])
+checks.push(['榜首估计值已格式化（含千分位）', killTopRow.some((c) => /1,000,000/.test(c))])
+console.log('击杀榜首行:', killTopRow.join(' | '))
 
 console.log(
   '过滤开关:',

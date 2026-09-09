@@ -68,3 +68,28 @@ export const ENDING_CLASS = {
 export function endingClass(ending) {
   return ENDING_CLASS[ending] || ''
 }
+
+/* ---------- 击杀估计 ---------- */
+
+export function estimateValue(c) {
+  return typeof c.kill_estimate === 'number' ? c.kill_estimate : null
+}
+
+export function formatNumber(n) {
+  return Number(n).toLocaleString('en-US')
+}
+
+// 有估计值就显示数字，否则退回范围量级标签
+export function killDisplay(c) {
+  const v = estimateValue(c)
+  if (v !== null) return formatNumber(v)
+  const aoe = c.aoe_level || '无'
+  return aoe === '无' ? '—' : aoe
+}
+
+// 排序用：没有估计值的排到最后
+export function killSortValue(c) {
+  const v = estimateValue(c)
+  if (v !== null) return v
+  return -1
+}

@@ -23,14 +23,18 @@ function valueOf(row, col) {
   return col.get ? col.get(row) : row[col.key]
 }
 
+function sortOf(row, col) {
+  return col.sortBy ? col.sortBy(row) : valueOf(row, col)
+}
+
 const sortedRows = computed(() => {
   if (!sortKey.value) return props.rows
   const col = props.columns.find((c) => c.key === sortKey.value)
   if (!col) return props.rows
   const dir = sortDir.value
   return [...props.rows].sort((a, b) => {
-    const x = valueOf(a, col)
-    const y = valueOf(b, col)
+    const x = sortOf(a, col)
+    const y = sortOf(b, col)
     if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir
     return String(x ?? '').localeCompare(String(y ?? ''), 'zh') * dir
   })

@@ -3,9 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import DataTable from './components/DataTable.vue'
 import AwardsPanel from './components/AwardsPanel.vue'
 import {
-  aoeText,
   endingClass,
-  killTotal,
+  estimateValue,
+  formatNumber,
+  killDisplay,
+  killSortValue,
   tierBase,
   tierLabel
 } from './lib/format.js'
@@ -37,6 +39,10 @@ onMounted(async () => {
 const categories = computed(() => Object.keys(data.value?.leaderboards?.by_category || {}))
 
 const totals = computed(() => data.value?.totals || {})
+
+const maxEstimate = computed(() =>
+  Math.max(0, ...(data.value?.characters || []).map((c) => estimateValue(c) || 0))
+)
 
 const charByUid = computed(() => {
   const map = {}
@@ -97,25 +103,21 @@ const powerColumns = [
     get: (r) => r.ending
   },
   {
-    key: 'kills',
-    label: '击杀(L1+L2)',
+    key: 'kill_estimate',
+    label: '估计击杀',
     align: 'num',
-    get: (r) => killTotal(r)
-  },
-  {
-    key: 'aoe_level',
-    label: '范围',
-    hideSm: true,
-    get: (r) => aoeText(r)
+    get: (r) => killDisplay(r),
+    sortBy: (r) => killSortValue(r)
   },
   { key: 'note', label: '吐槽', classOf: () => 'note', hideSm: true, get: (r) => r.note || '' }
 ]
 
 /* ---------- 击杀榜 ---------- */
 const killRows = computed(() => {
-  const list = data.value?.characters || []
+  const list = [...(data.value?.characters || [])]
+  list.sort((a, b) => killSortValue(b) - killSortValue(a))
   return list
-    .filter((c) => killTotal(c) > 0 || (c.aoe_level && c.aoe_level !== '无'))
+    .filter((c) => killSortValue(c) >= 0)
     .map((c, i) => ({ ...c, __rank: i + 1 }))
     .filter((c) => matchKind(c) && matchQuery(c))
 })
@@ -131,25 +133,31 @@ const killColumns = [
     get: (r) => tierLabel(r.power_tier)
   },
   {
-    key: 'kills_direct',
-    label: 'L1 亲手',
+    key: 'kill_estimate',
+    label: '估计击杀',
     align: 'num',
-    get: (r) => Number(r.kills_direct || 0)
+    get: (r) => killDisplay(r),
+    sortBy: (r) => killSortValue(r)
   },
   {
-    key: 'kills_indirect',
-    label: 'L2 间接',
-    align: 'num',
-    get: (r) => Number(r.kills_indirect || 0)
+    key: 'kill_estimate_label',
+    label: '量级',
+    hideSm: true,
+    get: (r) => r.kill_estimate_label || (r.aoe_level && r.aoe_level !== '无' ? r.aoe_level : '—')
   },
-  { key: 'aoe_level', label: 'L3 范围', get: (r) => aoeText(r) },
   {
     key: 'ending',
     label: '结局',
     classOf: (r) => endingClass(r.ending),
     get: (r) => r.ending
   },
-  { key: 'note', label: '吐槽', classOf: () => 'note', hideSm: true, get: (r) => r.note || '' }
+  {
+    key: 'kill_estimate_basis',
+    label: '估算依据',
+    classOf: () => 'note',
+    hideSm: true,
+    get: (r) => r.kill_estimate_basis || ''
+  }
 ]
 
 /* ---------- 死亡人数榜 ---------- */
@@ -257,8 +265,8 @@ const currentRows = computed(() => {
         <div class="chip">作品 <b>{{ totals.works || 0 }}</b> 篇</div>
         <div class="chip">角色 <b>{{ totals.characters || 0 }}</b> 个</div>
         <div class="chip">死亡角色 <b>{{ totals.deaths || 0 }}</b> 个</div>
-        <div class="chip">L1 亲手击杀 <b>{{ totals.kills_direct || 0 }}</b></div>
-        <div class="chip">L2 间接击杀 <b>{{ totals.kills_indirect || 0 }}</b></div>
+        <div class="chip">有击杀估计 <b>{{ totals.estimated_characters || 0 }}</b> 个</div>
+        <div class="chip">单人最高估计 <b>{{ formatNumber(maxEstimate) }}</b></div>
         <div class="chip">自灭 T∞ <b>{{ totals.self_kills || 0 }}</b></div>
       </div>
     </div>
@@ -317,8 +325,10 @@ const currentRows = computed(() => {
       <div class="panel" style="margin-top: 18px">
         <h3>统计口径</h3>
         <p class="note" style="margin: 0 0 8px; font-size: 13px">
-          <b>击杀三层</b>：L1 亲手（进数字）、L2 下令/设局/造物代劳（进数字）、L3 群体死亡（
-          <b>只给量级标签，不编数字</b>）。
+          <b>估计击杀</b>：不再逐条数「亲手/间接」，而是给每个角色一个<b>估算数字</b>——
+          能归因到他头上的死亡总数（含下令、设局、造物代劳、群体事件）。
+          原文给了数字就用原文数字；没给就按事件规模取量级内的代表值。
+          没有估算的角色显示其死亡量级标签。
         </p>
         <p class="note" style="margin: 0 0 8px; font-size: 13px">
           <b>战力等级</b>：T0 论外·元叙事 → T1 创世·灭世 → T2 神级·不死 → T3 超凡·屠城 → T4 高手 →
