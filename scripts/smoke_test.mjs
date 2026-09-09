@@ -91,6 +91,26 @@ console.log(
   `| 默认 ${initialRows}（人物）→ 取消后 ${afterUncheck}（全部 ${expectedAll}）`
 )
 
+// 切到「奖项」标签页，验证奖项卡片与提名的渲染
+const awardTab = [...doc.querySelectorAll('.tab')].find((t) => t.textContent.includes('奖项'))
+let awardCards = 0
+let runnerBlocks = 0
+if (awardTab) {
+  awardTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }))
+  for (let i = 0; i < 20; i++) {
+    await sleep(250)
+    awardCards = doc.querySelectorAll('.award-card').length
+    runnerBlocks = doc.querySelectorAll('.award-runners').length
+    if (awardCards > 0) break
+  }
+}
+const awardGroups = doc.querySelectorAll('.award-group').length
+checks.push(['奖项页渲染出卡片（≥20）', awardCards >= 20])
+checks.push(['奖项卡片带提名区块', runnerBlocks >= 20])
+checks.push(['奖项按分组渲染', awardGroups >= 4])
+
+console.log('奖项页:', `${awardCards} 张卡片 / ${runnerBlocks} 个提名区块 / ${awardGroups} 个分组`)
+
 console.log('URL:', url)
 console.log('标签页:', tabs.join(' | '))
 console.log('统计:', chips.join('  '))
